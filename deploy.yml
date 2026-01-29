@@ -1,0 +1,328 @@
+---
+# deploy.yml - Main deployment playbook for Apache and Nginx servers
+
+- name: Deploy to Apache Servers
+  hosts: apache_servers
+  become: yes
+  gather_facts: yes
+  
+  vars:
+    webapp_source_dir: "{{ lookup('env', 'WORKSPACE') }}/webapp"
+    web_root: /var/www/html
+    service_name: apache2
+    
+  pre_tasks:
+    - name: Display deployment information
+      debug:
+        msg:
+          - "========================================="
+          - "DEPLOYING TO APACHE SERVER"
+          - "========================================="
+          - "Server: {{ inventory_hostname }}"
+          - "Source: {{ webapp_source_dir }}"
+          - "Target: {{ web_root }}"
+          - "Service: {{ service_name }}"
+          - "========================================="
+    
+    - name: Wait for system to be ready
+      wait_for_connection:
+        timeout: 300
+        
+  tasks:
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+        cache_valid_time: 3600
+      tags: packages
+    
+    - name: Ensure Apache is installed
+      apt:
+        name: apache2
+        state: present
+      tags: packages
+    
+    - name: Ensure Apache is running and enabled
+      service:
+        name: apache2
+        state: started
+        enabled: yes
+      tags: service
+    
+    - name: Remove default Apache page
+      file:
+        path: "{{ web_root }}/index.html"
+        state: absent
+      tags: cleanup
+    
+    - name: Copy HTML file
+      copy:
+        src: "{{ webapp_source_dir }}/index.html"
+        dest: "{{ web_root }}/index.html"
+        owner: www-data
+        group: www-data
+        mode: '0644'
+      notify: restart apache
+      tags: deploy
+    
+    - name: Copy CSS file
+      copy:
+        src: "{{ webapp_source_dir }}/style.css"
+        dest: "{{ web_root }}/style.css"
+        owner: www-data
+        group: www-data
+        mode: '0644'
+      notify: restart apache
+      tags: deploy
+    
+    - name: Copy JavaScript file
+      copy:
+        src: "{{ webapp_source_dir }}/script.js"
+        dest: "{{ web_root }}/script.js"
+        owner: www-data
+        group: www-data
+        mode: '0644'
+      notify: restart apache
+      tags: deploy
+    
+    - name: Copy images directory
+      copy:
+        src: "{{ webapp_source_dir }}/images/"
+        dest: "{{ web_root }}/images/"
+        owner: www-data
+        group: www-data
+        mode: '0644'
+      notify: restart apache
+      tags: deploy
+      ignore_errors: yes
+    
+    - name: Set proper permissions
+      file:
+        path: "{{ web_root }}"
+        owner: www-data
+        group: www-data
+        recurse: yes
+      tags: permissions
+    
+    - name: Create deployment marker
+      copy:
+        content: |
+          Server Type: Apache
+          Deployed: {{ ansible_date_time.iso8601 }}
+          Server: {{ inventory_hostname }}
+          Hostname: {{ ansible_hostname }}
+        dest: "{{ web_root }}/deployment-info.txt"
+        owner: www-data
+        group: www-data
+        mode: '0644'
+      tags: deploy
+    
+    - name: Wait for Apache to be ready
+      wait_for:
+        port: 80
+        delay: 2
+        timeout: 30
+      tags: verify
+    
+    - name: Verify Apache website is accessible
+      uri:
+        url: "http://{{ inventory_hostname }}"
+        status_code: 200
+      register: result
+      until: result.status == 200
+      retries: 5
+      delay: 3
+      tags: verify
+  
+  post_tasks:
+    - name: Display Apache deployment success
+      debug:
+        msg:
+          - "========================================="
+          - "✅ APACHE DEPLOYMENT SUCCESSFUL"
+          - "========================================="
+          - "Server: {{ inventory_hostname }}"
+          - "URL: http://{{ ansible_default_ipv4.address }}"
+          - "Time: {{ ansible_date_time.iso8601 }}"
+          - "========================================="
+  
+  handlers:
+    - name: restart apache
+      service:
+        name: apache2
+        state: restarted
+
+---
+- name: Deploy to Nginx Servers
+  hosts: nginx_servers
+  become: yes
+  gather_facts: yes
+  
+  vars:
+    webapp_source_dir: "{{ lookup('env', 'WORKSPACE') }}/webapp"
+    web_root: /var/www/html
+    service_name: nginx
+    
+  pre_tasks:
+    - name: Display deployment information
+      debug:
+        msg:
+          - "========================================="
+          - "DEPLOYING TO NGINX SERVER"
+          - "========================================="
+          - "Server: {{ inventory_hostname }}"
+          - "Source: {{ webapp_source_dir }}"
+          - "Target: {{ web_root }}"
+          - "Service: {{ service_name }}"
+          - "========================================="
+    
+    - name: Wait for system to be ready
+      wait_for_connection:
+        timeout: 300
+        
+  tasks:
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+        cache_valid_time: 3600
+      tags: packages
+    
+    - name: Ensure Nginx is installed
+      apt:
+        name: nginx
+        state: present
+      tags: packages
+    
+    - name: Ensure Nginx is running and enabled
+      service:
+        name: nginx
+        state: started
+        enabled: yes
+      tags: service
+    
+    - name: Remove default Nginx page
+      file:
+        path: "{{ web_root }}/index.nginx-debian.html"
+        state: absent
+      tags: cleanup
+    
+    - name: Copy HTML file
+      copy:
+        src: "{{ webapp_source_dir }}/index.html"
+        dest: "{{ web_root }}/index.html"
+        owner: www-data
+        group: www-data
+        mode: '0644'
+      notify: restart nginx
+      tags: deploy
+    
+    - name: Copy CSS file
+      copy:
+        src: "{{ webapp_source_dir }}/style.css"
+        dest: "{{ web_root }}/style.css"
+        owner: www-data
+        group: www-data
+        mode: '0644'
+      notify: restart nginx
+      tags: deploy
+    
+    - name: Copy JavaScript file
+      copy:
+        src: "{{ webapp_source_dir }}/script.js"
+        dest: "{{ web_root }}/script.js"
+        owner: www-data
+        group: www-data
+        mode: '0644'
+      notify: restart nginx
+      tags: deploy
+    
+    - name: Copy images directory
+      copy:
+        src: "{{ webapp_source_dir }}/images/"
+        dest: "{{ web_root }}/images/"
+        owner: www-data
+        group: www-data
+        mode: '0644'
+      notify: restart nginx
+      tags: deploy
+      ignore_errors: yes
+    
+    - name: Set proper permissions
+      file:
+        path: "{{ web_root }}"
+        owner: www-data
+        group: www-data
+        recurse: yes
+      tags: permissions
+    
+    - name: Create deployment marker
+      copy:
+        content: |
+          Server Type: Nginx
+          Deployed: {{ ansible_date_time.iso8601 }}
+          Server: {{ inventory_hostname }}
+          Hostname: {{ ansible_hostname }}
+        dest: "{{ web_root }}/deployment-info.txt"
+        owner: www-data
+        group: www-data
+        mode: '0644'
+      tags: deploy
+    
+    - name: Wait for Nginx to be ready
+      wait_for:
+        port: 80
+        delay: 2
+        timeout: 30
+      tags: verify
+    
+    - name: Verify Nginx website is accessible
+      uri:
+        url: "http://{{ inventory_hostname }}"
+        status_code: 200
+      register: result
+      until: result.status == 200
+      retries: 5
+      delay: 3
+      tags: verify
+  
+  post_tasks:
+    - name: Display Nginx deployment success
+      debug:
+        msg:
+          - "========================================="
+          - "✅ NGINX DEPLOYMENT SUCCESSFUL"
+          - "========================================="
+          - "Server: {{ inventory_hostname }}"
+          - "URL: http://{{ ansible_default_ipv4.address }}"
+          - "Time: {{ ansible_date_time.iso8601 }}"
+          - "========================================="
+  
+  handlers:
+    - name: restart nginx
+      service:
+        name: nginx
+        state: restarted
+
+---
+- name: Display Final Deployment Summary
+  hosts: localhost
+  gather_facts: no
+  
+  tasks:
+    - name: Show complete deployment summary
+      debug:
+        msg:
+          - "========================================="
+          - "🎉 COMPLETE DEPLOYMENT SUMMARY"
+          - "========================================="
+          - "Apache Servers Deployed: {{ groups['apache_servers'] | length }}"
+          - "Nginx Servers Deployed: {{ groups['nginx_servers'] | length }}"
+          - "Total Servers: {{ groups['webservers'] | length }}"
+          - ""
+          - "Apache Server IPs:"
+          - "{{ groups['apache_servers'] | join('\n') }}"
+          - ""
+          - "Nginx Server IPs:"
+          - "{{ groups['nginx_servers'] | join('\n') }}"
+          - ""
+          - "All servers are now serving your web application!"
+          - "========================================="
