@@ -28,8 +28,8 @@
           <html>
           <head><title>Apache Server</title></head>
           <body>
-            <h1>Apache Web Server</h1>
-            <p>Deployed via Ansible</p>
+          <h1>Apache Web Server</h1>
+          <p>Deployed via Ansible</p>
           </body>
           </html>
 
@@ -68,8 +68,8 @@
           <html>
           <head><title>Nginx Server</title></head>
           <body>
-            <h1>Nginx Web Server</h1>
-            <p>Deployed via Ansible</p>
+          <h1>Nginx Web Server</h1>
+          <p>Deployed via Ansible</p>
           </body>
           </html>
 
