@@ -5,7 +5,7 @@ plugin: aws_ec2
 
 # AWS regions to search
 regions:
-  - us-east-1
+  - ap-south-1
 
 # Filter instances
 filters:
