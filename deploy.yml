@@ -151,7 +151,6 @@
         name: apache2
         state: restarted
 
----
 - name: Deploy to Nginx Servers
   hosts: nginx_servers
   become: yes
@@ -302,7 +301,6 @@
         name: nginx
         state: restarted
 
----
 - name: Display Final Deployment Summary
   hosts: localhost
   gather_facts: no
