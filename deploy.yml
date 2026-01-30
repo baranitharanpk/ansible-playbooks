@@ -17,22 +17,21 @@
       file:
         path: /var/www/html
         state: directory
-        mode: '0755'
+        mode: "0755"
 
     - name: Deploy index.html
       copy:
+        dest: /var/www/html/index.html
+        mode: "0644"
         content: |
           <!DOCTYPE html>
           <html>
           <head><title>Apache Server</title></head>
           <body>
-            <h1>Apache Web Server - Deployed via Ansible</h1>
-            <p>Server: {{ ansible_hostname }}</p>
-            <p>IP: {{ ansible_default_ipv4.address }}</p>
+            <h1>Apache Web Server</h1>
+            <p>Deployed via Ansible</p>
           </body>
           </html>
-        dest: /var/www/html/index.html
-        mode: '0644'
 
     - name: Ensure Apache2 is running
       service:
@@ -58,25 +57,25 @@
       file:
         path: /var/www/html
         state: directory
-        mode: '0755'
+        mode: "0755"
 
     - name: Deploy index.html
       copy:
+        dest: /var/www/html/index.html
+        mode: "0644"
         content: |
           <!DOCTYPE html>
           <html>
           <head><title>Nginx Server</title></head>
           <body>
-            <h1>Nginx Web Server - Deployed via Ansible</h1>
-            <p>Server: {{ ansible_hostname }}</p>
-            <p>IP: {{ ansible_default_ipv4.address }}</p>
+            <h1>Nginx Web Server</h1>
+            <p>Deployed via Ansible</p>
           </body>
           </html>
-        dest: /var/www/html/index.html
-        mode: '0644'
 
     - name: Ensure Nginx is running
       service:
         name: nginx
         state: started
         enabled: yes
+```
