@@ -1,6 +1,4 @@
 ---
-# deploy.yml - Main deployment playbook for Apache and Nginx servers
-
 - name: Deploy to Apache Servers
   hosts: apache_servers
   become: yes
