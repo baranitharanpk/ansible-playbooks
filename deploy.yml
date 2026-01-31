@@ -2,79 +2,172 @@
 - name: Deploy to Apache Servers
   hosts: apache_servers
   become: yes
+  gather_facts: yes
+  
+  vars:
+    webapp_source_dir: "{{ lookup('env', 'WORKSPACE') }}/webapp"
+    web_root: /var/www/html
+    service_name: apache2
+  
   tasks:
     - name: Update apt cache
       apt:
         update_cache: yes
         cache_valid_time: 3600
-
+    
     - name: Install Apache2
       apt:
         name: apache2
         state: present
-
-    - name: Create web directory
-      file:
-        path: /var/www/html
-        state: directory
-        mode: "0755"
-
-    - name: Deploy index.html
-      copy:
-        dest: /var/www/html/index.html
-        mode: "0644"
-        content: |
-          <!DOCTYPE html>
-          <html>
-          <head><title>Apache Server</title></head>
-          <body>
-          <h1>Apache Web Server</h1>
-          <p>Deployed via Ansible</p>
-          </body>
-          </html>
-
-    - name: Ensure Apache2 is running
+    
+    - name: Ensure Apache2 is running and enabled
       service:
         name: apache2
         state: started
         enabled: yes
+    
+    - name: Remove default Apache page
+      file:
+        path: "{{ web_root }}/index.html"
+        state: absent
+    
+    - name: Copy HTML file
+      copy:
+        src: "{{ webapp_source_dir }}/index.html"
+        dest: "{{ web_root }}/index.html"
+        owner: www-data
+        group: www-data
+        mode: '0644'
+      when: webapp_source_dir is defined
+    
+    - name: Copy CSS file
+      copy:
+        src: "{{ webapp_source_dir }}/style.css"
+        dest: "{{ web_root }}/style.css"
+        owner: www-data
+        group: www-data
+        mode: '0644'
+      when: webapp_source_dir is defined
+    
+    - name: Copy JavaScript file
+      copy:
+        src: "{{ webapp_source_dir }}/script.js"
+        dest: "{{ web_root }}/script.js"
+        owner: www-data
+        group: www-data
+        mode: '0644'
+      when: webapp_source_dir is defined
+    
+    - name: Create deployment marker
+      copy:
+        content: |
+          Server Type: Apache
+          Deployed: {{ ansible_date_time.iso8601 }}
+          Server: {{ inventory_hostname }}
+        dest: "{{ web_root }}/deployment-info.txt"
+        owner: www-data
+        group: www-data
+        mode: '0644'
+    
+    - name: Verify Apache is accessible
+      uri:
+        url: "http://{{ inventory_hostname }}"
+        status_code: 200
+      register: result
+      until: result.status == 200
+      retries: 5
+      delay: 3
 
+---
 - name: Deploy to Nginx Servers
   hosts: nginx_servers
   become: yes
+  gather_facts: yes
+  
+  vars:
+    webapp_source_dir: "{{ lookup('env', 'WORKSPACE') }}/webapp"
+    web_root: /var/www/html
+    service_name: nginx
+  
   tasks:
     - name: Update apt cache
       apt:
         update_cache: yes
         cache_valid_time: 3600
-
+    
     - name: Install Nginx
       apt:
         name: nginx
         state: present
-
-    - name: Create web directory
-      file:
-        path: /var/www/html
-        state: directory
-        mode: "0755"
-
-    - name: Deploy index.html
-      copy:
-        dest: /var/www/html/index.html
-        mode: "0644"
-        content: |
-          <!DOCTYPE html>
-          <html>
-          <head><title>Nginx Server</title></head>
-          <body>
-          <h1>Nginx Web Server</h1>
-          <p>Deployed via Ansible</p>
-          </body>
-          </html>
-
-    - name: Ensure Nginx is running
+    
+    - name: Ensure Nginx is running and enabled
       service:
         name: nginx
         state: started
         enabled: yes
+    
+    - name: Remove default Nginx page
+      file:
+        path: "{{ web_root }}/index.nginx-debian.html"
+        state: absent
+    
+    - name: Copy HTML file
+      copy:
+        src: "{{ webapp_source_dir }}/index.html"
+        dest: "{{ web_root }}/index.html"
+        owner: www-data
+        group: www-data
+        mode: '0644'
+      when: webapp_source_dir is defined
+    
+    - name: Copy CSS file
+      copy:
+        src: "{{ webapp_source_dir }}/style.css"
+        dest: "{{ web_root }}/style.css"
+        owner: www-data
+        group: www-data
+        mode: '0644'
+      when: webapp_source_dir is defined
+    
+    - name: Copy JavaScript file
+      copy:
+        src: "{{ webapp_source_dir }}/script.js"
+        dest: "{{ web_root }}/script.js"
+        owner: www-data
+        group: www-data
+        mode: '0644'
+      when: webapp_source_dir is defined
+    
+    - name: Create deployment marker
+      copy:
+        content: |
+          Server Type: Nginx
+          Deployed: {{ ansible_date_time.iso8601 }}
+          Server: {{ inventory_hostname }}
+        dest: "{{ web_root }}/deployment-info.txt"
+        owner: www-data
+        group: www-data
+        mode: '0644'
+    
+    - name: Verify Nginx is accessible
+      uri:
+        url: "http://{{ inventory_hostname }}"
+        status_code: 200
+      register: result
+      until: result.status == 200
+      retries: 5
+      delay: 3
+
+---
+- name: Display Deployment Summary
+  hosts: localhost
+  gather_facts: no
+  
+  tasks:
+    - name: Show deployment results
+      debug:
+        msg:
+          - "Apache Servers: {{ groups['apache_servers'] | length }}"
+          - "Nginx Servers: {{ groups['nginx_servers'] | length }}"
+          - "Total Servers: {{ groups['webservers'] | length }}"
+          
