@@ -1,76 +1,26 @@
 ---
 - name: Deploy to Apache Servers
   hosts: apache_servers
-  become: yes
-  gather_facts: yes
-  
+  become: true
+  gather_facts: true
+
   vars:
     webapp_source_dir: "{{ lookup('env', 'WORKSPACE') }}/webapp"
     web_root: /var/www/html
-    
+
   tasks:
     - name: Update apt cache
       apt:
         update_cache: yes
-        cache_valid_time: 3600
-    
-    - name: Install Apache2
-      apt:
-        name: apache2
-        state: present
-    
-    - name: Ensure Apache is running
-      service:
-        name: apache2
-        state: started
-        enabled: yes
-    
-    - name: Remove default Apache page
-      file:
-        path: "{{ web_root }}/index.html"
-        state: absent
-    
-    - name: Copy HTML file
+
+    - name: Copy web files
       copy:
-        src: "{{ webapp_source_dir }}/index.html"
-        dest: "{{ web_root }}/index.html"
+        src: "{{ webapp_source_dir }}/"
+        dest: "{{ web_root }}/"
         owner: www-data
         group: www-data
         mode: '0644'
-    
-    - name: Copy CSS file
-      copy:
-        src: "{{ webapp_source_dir }}/style.css"
-        dest: "{{ web_root }}/style.css"
-        owner: www-data
-        group: www-data
-        mode: '0644'
-    
-    - name: Copy JavaScript file
-      copy:
-        src: "{{ webapp_source_dir }}/script.js"
-        dest: "{{ web_root }}/script.js"
-        owner: www-data
-        group: www-data
-        mode: '0644'
-    
-    - name: Set permissions
-      file:
-        path: "{{ web_root }}"
-        owner: www-data
-        group: www-data
-        recurse: yes
-    
-    - name: Create deployment marker
-      copy:
-        content: |
-          Server Type: Apache
-          Deployed: {{ ansible_date_time.iso8601 }}
-        dest: "{{ web_root }}/deployment-info.txt"
-        owner: www-data
-        group: www-data
-        mode: '0644'
-    
+
     - name: Restart Apache
       service:
         name: apache2
@@ -78,76 +28,26 @@
 
 - name: Deploy to Nginx Servers
   hosts: nginx_servers
-  become: yes
-  gather_facts: yes
-  
+  become: true
+  gather_facts: true
+
   vars:
     webapp_source_dir: "{{ lookup('env', 'WORKSPACE') }}/webapp"
     web_root: /var/www/html
-    
+
   tasks:
     - name: Update apt cache
       apt:
         update_cache: yes
-        cache_valid_time: 3600
-    
-    - name: Install Nginx
-      apt:
-        name: nginx
-        state: present
-    
-    - name: Ensure Nginx is running
-      service:
-        name: nginx
-        state: started
-        enabled: yes
-    
-    - name: Remove default Nginx page
-      file:
-        path: "{{ web_root }}/index.nginx-debian.html"
-        state: absent
-    
-    - name: Copy HTML file
+
+    - name: Copy web files
       copy:
-        src: "{{ webapp_source_dir }}/index.html"
-        dest: "{{ web_root }}/index.html"
+        src: "{{ webapp_source_dir }}/"
+        dest: "{{ web_root }}/"
         owner: www-data
         group: www-data
         mode: '0644'
-    
-    - name: Copy CSS file
-      copy:
-        src: "{{ webapp_source_dir }}/style.css"
-        dest: "{{ web_root }}/style.css"
-        owner: www-data
-        group: www-data
-        mode: '0644'
-    
-    - name: Copy JavaScript file
-      copy:
-        src: "{{ webapp_source_dir }}/script.js"
-        dest: "{{ web_root }}/script.js"
-        owner: www-data
-        group: www-data
-        mode: '0644'
-    
-    - name: Set permissions
-      file:
-        path: "{{ web_root }}"
-        owner: www-data
-        group: www-data
-        recurse: yes
-    
-    - name: Create deployment marker
-      copy:
-        content: |
-          Server Type: Nginx
-          Deployed: {{ ansible_date_time.iso8601 }}
-        dest: "{{ web_root }}/deployment-info.txt"
-        owner: www-data
-        group: www-data
-        mode: '0644'
-    
+
     - name: Restart Nginx
       service:
         name: nginx
