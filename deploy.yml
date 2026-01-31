@@ -9,22 +9,34 @@
     web_root: /var/www/html
 
   tasks:
-    - name: Update apt cache
-      apt:
+    - name: Update yum cache
+      yum:
         update_cache: yes
+
+    - name: Install Apache
+      yum:
+        name: httpd
+        state: present
+
+    - name: Start and enable Apache
+      service:
+        name: httpd
+        state: started
+        enabled: yes
 
     - name: Copy web files
       copy:
         src: "{{ webapp_source_dir }}/"
         dest: "{{ web_root }}/"
-        owner: www-data
-        group: www-data
+        owner: apache
+        group: apache
         mode: '0644'
 
     - name: Restart Apache
       service:
-        name: apache2
+        name: httpd
         state: restarted
+
 
 - name: Deploy to Nginx Servers
   hosts: nginx_servers
@@ -33,19 +45,30 @@
 
   vars:
     webapp_source_dir: "{{ lookup('env', 'WORKSPACE') }}/webapp"
-    web_root: /var/www/html
+    web_root: /usr/share/nginx/html
 
   tasks:
-    - name: Update apt cache
-      apt:
+    - name: Update yum cache
+      yum:
         update_cache: yes
+
+    - name: Install Nginx
+      yum:
+        name: nginx
+        state: present
+
+    - name: Start and enable Nginx
+      service:
+        name: nginx
+        state: started
+        enabled: yes
 
     - name: Copy web files
       copy:
         src: "{{ webapp_source_dir }}/"
         dest: "{{ web_root }}/"
-        owner: www-data
-        group: www-data
+        owner: nginx
+        group: nginx
         mode: '0644'
 
     - name: Restart Nginx
