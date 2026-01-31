@@ -7,29 +7,32 @@
   vars:
     webapp_source_dir: "{{ lookup('env', 'WORKSPACE') }}/webapp"
     web_root: /var/www/html
-    service_name: apache2
-  
+    
   tasks:
     - name: Update apt cache
       apt:
         update_cache: yes
         cache_valid_time: 3600
+      tags: packages
     
     - name: Install Apache2
       apt:
         name: apache2
         state: present
+      tags: packages
     
-    - name: Ensure Apache2 is running and enabled
+    - name: Ensure Apache is running
       service:
         name: apache2
         state: started
         enabled: yes
+      tags: service
     
-    - name: Remove default Apache page
+    - name: Remove default page
       file:
         path: "{{ web_root }}/index.html"
         state: absent
+      tags: cleanup
     
     - name: Copy HTML file
       copy:
@@ -38,7 +41,7 @@
         owner: www-data
         group: www-data
         mode: '0644'
-      when: webapp_source_dir is defined
+      tags: deploy
     
     - name: Copy CSS file
       copy:
@@ -47,7 +50,7 @@
         owner: www-data
         group: www-data
         mode: '0644'
-      when: webapp_source_dir is defined
+      tags: deploy
     
     - name: Copy JavaScript file
       copy:
@@ -56,7 +59,15 @@
         owner: www-data
         group: www-data
         mode: '0644'
-      when: webapp_source_dir is defined
+      tags: deploy
+    
+    - name: Set ownership
+      file:
+        path: "{{ web_root }}"
+        owner: www-data
+        group: www-data
+        recurse: yes
+      tags: permissions
     
     - name: Create deployment marker
       copy:
@@ -68,17 +79,14 @@
         owner: www-data
         group: www-data
         mode: '0644'
+      tags: deploy
     
-    - name: Verify Apache is accessible
-      uri:
-        url: "http://{{ inventory_hostname }}"
-        status_code: 200
-      register: result
-      until: result.status == 200
-      retries: 5
-      delay: 3
+    - name: Restart Apache
+      service:
+        name: apache2
+        state: restarted
+      tags: service
 
----
 - name: Deploy to Nginx Servers
   hosts: nginx_servers
   become: yes
@@ -87,29 +95,32 @@
   vars:
     webapp_source_dir: "{{ lookup('env', 'WORKSPACE') }}/webapp"
     web_root: /var/www/html
-    service_name: nginx
-  
+    
   tasks:
     - name: Update apt cache
       apt:
         update_cache: yes
         cache_valid_time: 3600
+      tags: packages
     
     - name: Install Nginx
       apt:
         name: nginx
         state: present
+      tags: packages
     
-    - name: Ensure Nginx is running and enabled
+    - name: Ensure Nginx is running
       service:
         name: nginx
         state: started
         enabled: yes
+      tags: service
     
-    - name: Remove default Nginx page
+    - name: Remove default page
       file:
         path: "{{ web_root }}/index.nginx-debian.html"
         state: absent
+      tags: cleanup
     
     - name: Copy HTML file
       copy:
@@ -118,7 +129,7 @@
         owner: www-data
         group: www-data
         mode: '0644'
-      when: webapp_source_dir is defined
+      tags: deploy
     
     - name: Copy CSS file
       copy:
@@ -127,7 +138,7 @@
         owner: www-data
         group: www-data
         mode: '0644'
-      when: webapp_source_dir is defined
+      tags: deploy
     
     - name: Copy JavaScript file
       copy:
@@ -136,7 +147,15 @@
         owner: www-data
         group: www-data
         mode: '0644'
-      when: webapp_source_dir is defined
+      tags: deploy
+    
+    - name: Set ownership
+      file:
+        path: "{{ web_root }}"
+        owner: www-data
+        group: www-data
+        recurse: yes
+      tags: permissions
     
     - name: Create deployment marker
       copy:
@@ -148,26 +167,10 @@
         owner: www-data
         group: www-data
         mode: '0644'
+      tags: deploy
     
-    - name: Verify Nginx is accessible
-      uri:
-        url: "http://{{ inventory_hostname }}"
-        status_code: 200
-      register: result
-      until: result.status == 200
-      retries: 5
-      delay: 3
-
----
-- name: Display Deployment Summary
-  hosts: localhost
-  gather_facts: no
-  
-  tasks:
-    - name: Show deployment results
-      debug:
-        msg:
-          - "Apache Servers: {{ groups['apache_servers'] | length }}"
-          - "Nginx Servers: {{ groups['nginx_servers'] | length }}"
-          - "Total Servers: {{ groups['webservers'] | length }}"
-          
+    - name: Restart Nginx
+      service:
+        name: nginx
+        state: restarted
+      tags: service
